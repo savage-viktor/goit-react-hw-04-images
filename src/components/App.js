@@ -1,4 +1,4 @@
-import { Component } from "react";
+import { useState, useEffect } from "react";
 import styles from "./App.module.css";
 
 import Searchbar from "./Searchbar/Searchbar";
@@ -17,99 +17,173 @@ const STATUS = {
   REJECTED: "rejected",
 };
 
-class App extends Component {
-  state = {
-    imageName: "",
-    status: STATUS.IDLE,
-    images: [],
-    page: 1,
-    perPage: 12,
-    errorMessage: "",
-    currentImage: null,
-    modal: false,
+const App = () => {
+  // state = {
+  //   imageName: "",
+  //   status: STATUS.IDLE,
+  //   images: [],
+  //   page: 1,
+  //   perPage: 12,
+  //   errorMessage: "",
+  //   currentImage: null,
+  //   modal: false,
+  // };
+
+  const [imageName, setImageName] = useState("");
+  const [status, setStatus] = useState(STATUS.IDLE);
+  const [images, setImages] = useState([]);
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(12);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [currentImage, setCurrentImage] = useState(null);
+  const [modal, setModal] = useState(false);
+
+  const handleLoadMode = () => {
+    setPerPage((prevState) => prevState + 1);
   };
 
-  handleLoadMode = () => {
-    this.setState((prevState) => {
-      return { page: prevState.page + 1 };
-    });
+  const handleSearch = (searchWord) => {
+    setImageName(searchWord);
   };
 
-  handleSearch = (searchWord) => {
-    this.setState({ imageName: searchWord });
+  const handleOpenModal = (image) => {
+    setCurrentImage(image);
+    setModal(true);
   };
 
-  handleOpenModal = (image) => {
-    this.setState({ currentImage: image, modal: true });
+  const handleCloseModal = () => {
+    setModal(false);
   };
 
-  handleCloseModal = () => {
-    this.setState({ modal: false });
-  };
-
-  async componentDidUpdate(_, prevState) {
-    const { imageName, perPage, page } = this.state;
-
-    if (prevState.imageName !== imageName) {
-      this.setState({ status: STATUS.PENDING });
-
-      try {
-        const response = await getImages(imageName, 1, perPage);
-        if (response.status === 200) {
-          this.setState({ images: response.data.hits });
-          this.setState({ status: STATUS.RESOLVED, page: 1 });
-        }
-        // else return Promise.reject(response);
-      } catch (error) {
-        this.setState({ errorMessage: error.message, status: STATUS.REJECTED });
-      }
+  useEffect(() => {
+    if (imageName === "") {
+      return;
     }
+    setStatus(STATUS.PENDING);
+    console.log("Змінилось імя");
 
-    if (prevState.page < page) {
-      try {
-        const response = await getImages(imageName, page, perPage);
-        if (response.status === 200) {
-          this.setState((prevState) => ({
-            images: [...prevState.images, ...response.data.hits],
-          }));
-        }
-      } catch (error) {
-        this.setState({ errorMessage: error.message, status: STATUS.REJECTED });
-      } finally {
+    const fetchImages = async () => {
+      console.log("Всередині fetchImages");
+      const response = await getImages(imageName, 1, perPage);
+      console.log("response>>>>>", response);
+      if (response.status === 200) {
+        setImages(response.data.hits);
+        setStatus(STATUS.RESOLVED);
       }
-    }
-  }
+    };
 
-  render() {
-    const { status, images, page, perPage, currentImage, modal, errorMessage } =
-      this.state;
+    fetchImages().catch(console.error);
 
-    const loadMoreVisible = images.length === page * perPage;
+    // console.log("Response >>>>", response());
+  }, [imageName]);
 
-    return (
-      <div className={styles.App}>
-        <Searchbar onSubmit={this.handleSearch} />
+  // useEffect(() => {
+  //   if (page !== 1) {
+  //     try {
+  //       const response = getImages(imageName, page, perPage);
+  //       if (response.status === 200) {
+  //         setImages((prevState) => [
+  //           ...prevState.images,
+  //           ...response.data.hits,
+  //         ]);
+  //       }
+  //     } catch (error) {
+  //       setErrorMessage(error.message);
+  //       setStatus(STATUS.REJECTED);
+  //     } finally {
+  //     }
+  //   }
+  // }, [page]);
 
-        {status === STATUS.PENDING && <Loader />}
+  // async componentDidUpdate(_, prevState) {
+  //   const { imageName, perPage, page } = this.state;
 
-        {status === STATUS.REJECTED && <Error errorMessage={errorMessage} />}
+  //   if (prevState.imageName !== imageName) {
+  //     this.setState({ status: STATUS.PENDING });
 
-        {status === STATUS.RESOLVED && (
-          <ImageGallery images={images} onClick={this.handleOpenModal} />
-        )}
+  //     try {
+  //       const response = await getImages(imageName, 1, perPage);
+  //       if (response.status === 200) {
+  //         this.setState({ images: response.data.hits });
+  //         this.setState({ status: STATUS.RESOLVED, page: 1 });
+  //       }
+  //       // else return Promise.reject(response);
+  //     } catch (error) {
+  //       this.setState({ errorMessage: error.message, status: STATUS.REJECTED });
+  //     }
+  //   }
 
-        {loadMoreVisible && <Button onClick={this.handleLoadMode} />}
+  //   if (prevState.page < page) {
+  //     try {
+  //       const response = await getImages(imageName, page, perPage);
+  //       if (response.status === 200) {
+  //         this.setState((prevState) => ({
+  //           images: [...prevState.images, ...response.data.hits],
+  //         }));
+  //       }
+  //     } catch (error) {
+  //       this.setState({ errorMessage: error.message, status: STATUS.REJECTED });
+  //     } finally {
+  //     }
+  //   }
+  // }
 
-        {modal && (
-          <Modal
-            onClose={this.handleCloseModal}
-            image={currentImage.largeImageURL}
-            description={currentImage.tags}
-          />
-        )}
-      </div>
-    );
-  }
-}
+  // render() {
+  //   const { status, images, page, perPage, currentImage, modal, errorMessage } =
+  //     this.state;
+
+  //   const loadMoreVisible = images.length === page * perPage;
+
+  //   return (
+  //     <div className={styles.App}>
+  //       <Searchbar onSubmit={this.handleSearch} />
+
+  //       {status === STATUS.PENDING && <Loader />}
+
+  //       {status === STATUS.REJECTED && <Error errorMessage={errorMessage} />}
+
+  //       {status === STATUS.RESOLVED && (
+  //         <ImageGallery images={images} onClick={this.handleOpenModal} />
+  //       )}
+
+  //       {loadMoreVisible && <Button onClick={this.handleLoadMode} />}
+
+  //       {modal && (
+  //         <Modal
+  //           onClose={this.handleCloseModal}
+  //           image={currentImage.largeImageURL}
+  //           description={currentImage.tags}
+  //         />
+  //       )}
+  //     </div>
+  //   );
+  // }
+
+  const loadMoreVisible = images.length === page * perPage;
+
+  return (
+    <div className={styles.App}>
+      <Searchbar onSubmit={handleSearch} />
+
+      {status === STATUS.PENDING && <Loader />}
+
+      {status === STATUS.REJECTED && <Error errorMessage={errorMessage} />}
+
+      {status === STATUS.RESOLVED && (
+        <ImageGallery images={images} onClick={handleOpenModal} />
+      )}
+
+      {loadMoreVisible && <Button onClick={handleLoadMode} />}
+
+      {modal && (
+        <Modal
+          onClose={handleCloseModal}
+          image={currentImage.largeImageURL}
+          description={currentImage.tags}
+        />
+      )}
+    </div>
+  );
+};
 
 export default App;
