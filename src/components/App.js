@@ -83,7 +83,8 @@ const App = () => {
       setErrorMessage(error.message);
       setStatus(STATUS.REJECTED);
     });
-  }, [imageName, page, perPage]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, perPage]);
 
   const loadMoreVisible = images.length === page * perPage;
 
