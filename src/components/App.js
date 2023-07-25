@@ -26,13 +26,22 @@ const App = () => {
   const [errorMessage, setErrorMessage] = useState("");
   const [currentImage, setCurrentImage] = useState(null);
   const [modal, setModal] = useState(false);
+  const [searchAgain, setSearchAgain] = useState(0);
 
   const handleLoadMode = () => {
     setPage((prevState) => prevState + 1);
   };
 
   const handleSearch = (searchWord) => {
-    setImageName(searchWord);
+    if (searchWord !== imageName) {
+      setImageName(searchWord);
+      setPage(1);
+      setImages([]);
+    }
+
+    if (status === STATUS.REJECTED) {
+      setSearchAgain((prevState) => prevState + 1);
+    }
   };
 
   const handleOpenModal = (image) => {
@@ -49,26 +58,8 @@ const App = () => {
       return;
     }
 
-    setStatus(STATUS.PENDING);
-
-    const fetchImages = async () => {
-      const response = await getImages(imageName, 1, perPage);
-      if (response.status === 200) {
-        setImages(response.data.hits);
-        setStatus(STATUS.RESOLVED);
-        setPage(1);
-      }
-    };
-
-    fetchImages().catch((error) => {
-      setErrorMessage(error.message);
-      setStatus(STATUS.REJECTED);
-    });
-  }, [imageName, perPage]);
-
-  useEffect(() => {
     if (page === 1) {
-      return;
+      setStatus(STATUS.PENDING);
     }
 
     const fetchImages = async () => {
@@ -76,6 +67,10 @@ const App = () => {
       if (response.status === 200) {
         setImages((prevState) => [...prevState, ...response.data.hits]);
         setStatus(STATUS.RESOLVED);
+        if (response.data.hits.length === 0) {
+          setErrorMessage(`There is no ${imageName}`);
+          setStatus(STATUS.REJECTED);
+        }
       }
     };
 
@@ -83,8 +78,7 @@ const App = () => {
       setErrorMessage(error.message);
       setStatus(STATUS.REJECTED);
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, perPage]);
+  }, [imageName, page, perPage, searchAgain]);
 
   const loadMoreVisible = images.length === page * perPage;
 
@@ -92,13 +86,13 @@ const App = () => {
     <div className={styles.App}>
       <Searchbar onSubmit={handleSearch} />
 
-      {status === STATUS.PENDING && <Loader />}
-
       {status === STATUS.REJECTED && <Error errorMessage={errorMessage} />}
 
       {status === STATUS.RESOLVED && (
         <ImageGallery images={images} onClick={handleOpenModal} />
       )}
+
+      {status === STATUS.PENDING && <Loader />}
 
       {loadMoreVisible && <Button onClick={handleLoadMode} />}
 
