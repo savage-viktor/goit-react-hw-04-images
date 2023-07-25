@@ -83,7 +83,7 @@ const App = () => {
       setErrorMessage(error.message);
       setStatus(STATUS.REJECTED);
     });
-  }, [page, perPage]);
+  }, [imageName, page, perPage]);
 
   const loadMoreVisible = images.length === page * perPage;
 
